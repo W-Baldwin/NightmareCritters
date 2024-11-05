@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-namespace NightmareCritters
+namespace NightmareCritters.Flyable
 {
     [HarmonyPatch(typeof(RoundManager))]
     [HarmonyPatch("UnloadSceneObjectsEarly")]
@@ -14,8 +14,10 @@ namespace NightmareCritters
         private static void UnloadSceneObjectsEarly()
         {
             GameObject topContainer = GameObject.Find("FlyableGrid");
-            GameObject.Destroy(topContainer);
-            PoeAI.mapCreatedOrInProgress = false;
+            UnityEngine.Object.Destroy(topContainer);
+            FlyableGrid.mapCreatedOrInProgress = false;
+            FlyableGrid.created = false;
+            FlyableGrid.flyableAreaIslands.Clear();
         }
     }
 }
