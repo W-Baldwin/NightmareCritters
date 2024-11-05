@@ -7,13 +7,16 @@ using System.Text;
 using UnityEngine;
 using Unity.Netcode;
 using NightmareCritters.Flyable;
+using LethalConfig.ConfigItems;
+using System.Net;
+using static Unity.Audio.Handle;
 
 namespace NightmareCritters
 {
     internal class PoeAI : EnemyAI
     {
 
-        internal enum poeStates { Patrol, Divebomb, Observe, Ascend, Descend, Walk, Idle};
+        internal enum poeStates { GroundWander, Ascend, AirPatrol, asd, Descend, Walk, Idle};
         internal enum HeadRotationMode { Ground, Ascend, Air };
 
         public HeadRotationMode headRotationMode = HeadRotationMode.Ground;
@@ -37,17 +40,23 @@ namespace NightmareCritters
         public Quaternion targetLookAngle;
         public Quaternion currentLookAngle;
         public Quaternion noTargetLookAngle = Quaternion.identity;
-    
+
 
         //Flying Location Nodes
-        FlyableAreaIsland flyableArea = null;
+        public bool flying = false;
+        public FlyableAreaIsland flyableArea = null;
+        public GameObject closestNode;
         public Queue<Vector3> flyingRouteLocations = new Queue<Vector3>();
+
+        //Wandering
+        private readonly float maxWanderTime = 5f;
+        private float wanderTime = 0;
 
 
         public override void Start()
         {
             base.Start();
-            if (!FlyableGrid.mapCreatedOrInProgress && isOutside)
+            if (!FlyableGrid.mapCreatedOrInProgress && isOutside && IsHost)
             {
                 FlyableGrid.mapCreatedOrInProgress = true;
                 StartCoroutine(CreateFlyableArea());
@@ -71,9 +80,44 @@ namespace NightmareCritters
             //Wait a little for extra safety.
             yield return new WaitForSeconds(1.0f);
 
-            //Then we would do flyableArea = GetClosestIsland() or something like that.
-        }
+            if (FlyableGrid.flyableAreaIslands == null)
+            {
+                yield break;
+            }
 
+            FlyableAreaIsland flyableArea = null;
+            GameObject closestNode = null;
+            float closestDistance = Mathf.Infinity;
+            foreach (FlyableAreaIsland flyingIsland in FlyableGrid.flyableAreaIslands)
+            {
+                float nodeCount = 0;
+                if (flyingIsland == null) { continue; }
+                foreach (GameObject node in flyingIsland.flyNodes)
+                {
+                    if (node == null) {  continue; }
+                    float distance = (Vector3.Distance(headBone.transform.position, node.transform.position));
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestNode = node;
+                    }
+                    nodeCount++;
+                    if (nodeCount > 50)
+                    {
+                        nodeCount = 0;
+                        yield return null;
+                    }
+                }
+            }
+
+            foreach (FlyableAreaIsland island in FlyableGrid.flyableAreaIslands)
+            {
+                if (island.flyNodes.Contains(closestNode))
+                {
+                    this.flyableArea = flyableArea;
+                }
+            }
+        }
 
         public override void DoAIInterval()
         {
@@ -82,10 +126,19 @@ namespace NightmareCritters
             {
                 return;
             }
-            if (!poeSearch.inProgress)
+            switch(currentBehaviourStateIndex)
             {
-                StartSearch(transform.position, poeSearch);
+                case (int)poeStates.GroundWander:
+                    if (!poeSearch.inProgress)
+                    {
+                        StartSearch(transform.position, poeSearch);
+                    }
+                    break;
+                case (int)poeStates.Ascend:
+                    closestNode = flyableArea.GetClosestNode(transform);
+                    break;
             }
+
         }
 
         public override void Update()
@@ -96,6 +149,7 @@ namespace NightmareCritters
                 return;
             }
             UpdateRotationCalculations();
+            UpdateStateDependent();
         }
 
         public void LateUpdate()
@@ -118,6 +172,21 @@ namespace NightmareCritters
             Vector3 currentHeadEulerAngles = Vector3.zero;
             currentHeadEulerAngles.x = frameRotationOffset;
             noTargetLookAngle = Quaternion.Euler(currentHeadEulerAngles);
+        }
+
+        private void UpdateStateDependent()
+        {
+            switch (currentBehaviourStateIndex)
+            {
+                case (int)poeStates.GroundWander:
+                    wanderTime += Time.deltaTime;
+                    if (wanderTime > maxWanderTime)
+                    {
+                        wanderTime = 0;
+                        SwitchToAscend();
+                    }
+                    break;
+            }
         }
 
         private void UpdateHeadRotation()
@@ -158,6 +227,18 @@ namespace NightmareCritters
             //interpolate
             currentLookAngle = Quaternion.Slerp(currentLookAngle, targetLookAngle, lookSpeed * Time.deltaTime);
             headBone.localRotation = currentLookAngle;
+        }
+
+        private void SwitchToAscend()
+        {
+            if (poeSearch.inProgress)
+            {
+                StopSearch(poeSearch, true);
+            }
+            SwitchToBehaviourState((int)poeStates.Ascend);
+            creatureAnimator.SetBool("Flying", true);
+            closestNode = null;
+            agent.enabled = false;
         }
 
 

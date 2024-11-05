@@ -53,5 +53,41 @@ namespace NightmareCritters.Flyable
             sortedFlyNodes[x][y][z] = node;
             flyNodes.Add(node);
         }
+
+        public GameObject GetClosestNode(Transform target)
+        {
+            Vector3 targetPos = target.position;
+
+            // Convert the target position to indices within sortedFlyNodes
+            int xIndex = Mathf.Clamp(Mathf.FloorToInt((targetPos.x - minX) / cubeSize), 0, xSize - 1);
+            int yIndex = Mathf.Clamp(Mathf.FloorToInt((targetPos.y - minY) / cubeSize), 0, ySize - 1);
+            int zIndex = Mathf.Clamp(Mathf.FloorToInt((targetPos.z - minZ) / cubeSize), 0, zSize - 1);
+
+            GameObject closestNode = null;
+            float shortestDistance = Mathf.Infinity;
+
+            // Check the node at (xIndex, yIndex, zIndex) and its immediate neighbors
+            for (int i = Mathf.Max(0, xIndex - 1); i <= Mathf.Min(xSize - 1, xIndex + 1); i++)
+            {
+                for (int j = Mathf.Max(0, yIndex - 1); j <= Mathf.Min(ySize - 1, yIndex + 1); j++)
+                {
+                    for (int k = Mathf.Max(0, zIndex - 1); k <= Mathf.Min(zSize - 1, zIndex + 1); k++)
+                    {
+                        GameObject node = sortedFlyNodes[i][j][k];
+                        if (node != null)
+                        {
+                            float distance = Vector3.Distance(targetPos, node.transform.position);
+                            if (distance < shortestDistance)
+                            {
+                                shortestDistance = distance;
+                                closestNode = node;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return closestNode;
+        }
     }
 }

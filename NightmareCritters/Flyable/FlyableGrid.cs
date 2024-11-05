@@ -24,7 +24,6 @@ namespace NightmareCritters.Flyable
             float lowestY = Mathf.Infinity;
             float minX = Mathf.Infinity, maxX = -Mathf.Infinity;
             float minZ = Mathf.Infinity, maxZ = -Mathf.Infinity;
-            float minY = Mathf.Infinity, maxY = -Mathf.Infinity;
 
             const int aiNodesPerFrame = 10;
             int currentAINodeFrame = 0;
@@ -42,8 +41,6 @@ namespace NightmareCritters.Flyable
                 if (pos.x > maxX) maxX = pos.x;
                 if (pos.z < minZ) minZ = pos.z;
                 if (pos.z > maxZ) maxZ = pos.z;
-                if (pos.y < minY) minY = pos.y;
-                if (pos.y > maxY) maxY = pos.y;
                 currentAINodeFrame++;
                 if (currentAINodeFrame >= aiNodesPerFrame)
                 {
@@ -56,7 +53,7 @@ namespace NightmareCritters.Flyable
             float totalGridSizeX = maxX - minX;
             float totalGridSizeZ = maxZ - minZ;
             float averageGridSize = (totalGridSizeX + totalGridSizeZ) / 2f;
-            float cubeSize = Mathf.Clamp(10.0f + (int)(averageGridSize / 50), 5f, 25f);
+            float cubeSize = Mathf.Clamp(10.0f + (int)(averageGridSize / 25), 5f, 25f);
             nodeSize = cubeSize;
 
             //Compute average position of all AI nodes on the map.
@@ -77,7 +74,7 @@ namespace NightmareCritters.Flyable
             //Determine grid dimensions
             int gridSizeX = Mathf.CeilToInt((maxX - minX) / cubeSize) + 1;
             int gridSizeZ = Mathf.CeilToInt((maxZ - minZ) / cubeSize) + 1;
-            int gridLayersY = Mathf.RoundToInt((maxY - minY / cubeSize) + 1);
+            int gridLayersY = 8;
 
             // Initialize a 1D list to store nodes
             List<GameObject> allFlyNodes = new List<GameObject>();
