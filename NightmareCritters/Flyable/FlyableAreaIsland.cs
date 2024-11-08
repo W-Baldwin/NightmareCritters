@@ -54,7 +54,110 @@ namespace NightmareCritters.Flyable
             flyNodes.Add(node);
         }
 
-        public GameObject GetClosestNode(Transform target)
+        public GameObject GetAdjacentOffsetNode(GameObject node, int xOffset, int yOffset, int zOffset)
+        {
+            //My index.
+            int xIndex = Mathf.Clamp(Mathf.FloorToInt((node.transform.position.x - minX) / cubeSize), 0, xSize - 1);
+            int yIndex = Mathf.Clamp(Mathf.FloorToInt((node.transform.position.y - minY) / cubeSize), 0, ySize - 1);
+            int zIndex = Mathf.Clamp(Mathf.FloorToInt((node.transform.position.z - minZ) / cubeSize), 0, zSize - 1);
+
+            int targetX = xIndex + xOffset;
+            int targetY = yIndex + yOffset;
+            int targetZ = zIndex + zOffset;
+
+            if (targetX < 0 || targetX >= sortedFlyNodes.Length) { return null; }
+            if (targetY < 0 || targetY >= sortedFlyNodes[0].Length) { return null; }
+            if (targetZ < 0 || targetZ >= sortedFlyNodes[0][0].Length) { return null; }
+
+            return sortedFlyNodes[targetX][targetY][targetZ];
+        }
+
+        public GameObject GetAdjacentOffsetNode(int xIndex, int yIndex, int zIndex, int xOffset, int yOffset, int zOffset)
+        {
+            int targetX = xIndex + xOffset;
+            int targetY = yIndex + yOffset;
+            int targetZ = zIndex + zOffset;
+
+            if (targetX < 0 || targetX >= sortedFlyNodes.Length) { return null; }
+            if (targetY < 0 || targetY >= sortedFlyNodes[0].Length) { return null; }
+            if (targetZ < 0 || targetZ >= sortedFlyNodes[0][0].Length) { return null; }
+
+            return sortedFlyNodes[targetX][targetY][targetZ];
+        }
+
+        public GameObject[] GetNodeNeighbors(GameObject closestNode)
+        {
+            //My index.
+            int xIndex = Mathf.Clamp(Mathf.FloorToInt((closestNode.transform.position.x - minX) / cubeSize), 0, xSize - 1);
+            int yIndex = Mathf.Clamp(Mathf.FloorToInt((closestNode.transform.position.y - minY) / cubeSize), 0, ySize - 1);
+            int zIndex = Mathf.Clamp(Mathf.FloorToInt((closestNode.transform.position.z - minZ) / cubeSize), 0, zSize - 1);
+
+            List<GameObject> neighbors = new List<GameObject>();
+
+            // Iterate through all neighboring indices within a 1-unit range in each direction
+            for (int i = Mathf.Max(0, xIndex - 1); i <= Mathf.Min(xSize - 1, xIndex + 1); i++)
+            {
+                for (int j = Mathf.Max(0, yIndex - 1); j <= Mathf.Min(ySize - 1, yIndex + 1); j++)
+                {
+                    for (int k = Mathf.Max(0, zIndex - 1); k <= Mathf.Min(zSize - 1, zIndex + 1); k++)
+                    {
+                        // Skip the center node (the current node itself)
+                        if (i == xIndex && j == yIndex && k == zIndex)
+                        {
+                            continue;
+                        }
+
+                        // Add the neighbor if it exists
+                        GameObject neighborNode = sortedFlyNodes[i][j][k];
+                        if (neighborNode != null)
+                        {
+                            neighbors.Add(neighborNode);
+                        }
+                    }
+                }
+            }
+            Debug.Log($"Neighbors of {closestNode.name} found: {neighbors.Count}");
+            return neighbors.ToArray();
+        }
+
+        //Gets the highest found node above the given transform position.
+        public GameObject GetHighestNode(Transform target)
+        {
+            // Convert the target position to indices within sortedFlyNodes
+            int xIndex = Mathf.Clamp(Mathf.FloorToInt((target.position.x - minX) / cubeSize), 0, xSize - 1);
+            int yIndex = sortedFlyNodes[0].Length - 1;
+            int zIndex = Mathf.Clamp(Mathf.FloorToInt((target.position.z - minZ) / cubeSize), 0, zSize - 1);
+
+            GameObject highestNode = null;
+            int attempts = 0;
+            int xOffset = 0;
+            int zOffset = 0;
+
+            while (highestNode == null && attempts < 9)
+            {
+                for (int x = -xOffset; x <= xOffset; x++)
+                {
+                    for (int z = -zOffset; z <= zOffset; z++)
+                    {
+                        // Get node at this offset in the current y layer
+                        highestNode = GetAdjacentOffsetNode(xIndex, yIndex, zIndex, x, 0, z);
+                        if (highestNode != null)
+                        {
+                            return highestNode;
+                        }
+                    }
+                }
+                // Expand search range for next layer down
+                xOffset++;
+                zOffset++;
+                yIndex--;  // Move down to next layer
+                attempts++;
+            }
+            return highestNode;
+        }
+
+
+        public GameObject GetClosestNode(Transform target, bool known = true)
         {
             Vector3 targetPos = target.position;
 
@@ -89,5 +192,63 @@ namespace NightmareCritters.Flyable
 
             return closestNode;
         }
+
+        public List<GameObject> FindShortestNodeChain(Transform startTransform, Transform endTransform)
+        {
+            GameObject startNode = startTransform.gameObject;
+            GameObject endNode = endTransform.gameObject;
+            Debug.Log($"Start Node: {startNode.name}, End Node: {endNode.name}");
+
+            if (startNode == null || endNode == null)
+            {
+                Debug.Log("FindShortestNodeChain: Early return start or end is null.");
+                return null;
+            }
+
+            if (startNode == endNode)
+                return new List<GameObject> { startNode };
+
+            var parents = new Dictionary<GameObject, GameObject>();
+            var queue = new Queue<GameObject>();
+            var visited = new HashSet<GameObject> { startNode };
+
+            queue.Enqueue(startNode);
+
+            while (queue.Count > 0)
+            {
+                var currentNode = queue.Dequeue();
+                Debug.Log($"Processing node: {currentNode.name}"); // Log current processing node
+
+                foreach (var neighbor in GetNodeNeighbors(currentNode))
+                {
+                    if (visited.Contains(neighbor))
+                        continue;
+
+                    visited.Add(neighbor);
+                    parents[neighbor] = currentNode; // Set parent for path reconstruction
+                    queue.Enqueue(neighbor);
+
+                    if (neighbor == endNode)
+                    {
+                        // Construct path from start to end node
+                        var path = new List<GameObject>();
+                        for (var node = endNode; node != null; node = parents.GetValueOrDefault(node))
+                        {
+                            path.Add(node);
+                            Debug.Log($"Path node: {node.name}"); // Log each path node
+                        }
+                        path.Reverse();
+                        return path;
+                    }
+                }
+            }
+
+            // If no path is found
+            Debug.Log("No path found from start to end node.");
+            return null;
+        }
+
+
+
     }
 }

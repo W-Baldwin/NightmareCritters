@@ -33,7 +33,7 @@ namespace NightmareCritters
             poeAIScript.updatePositionThreshold = 99999999f;
             poeAIScript.exitVentAnimationTime = 1;
             poeAIScript.enemyType = poe;
-            poeAIScript.eye = poe.enemyPrefab.transform.Find("Eye");
+            poeAIScript.eye = FindDeepChild(poe.enemyPrefab.transform, "Eye");
             poeAIScript.agent = poe.enemyPrefab.GetComponent<NavMeshAgent>();
             poeAIScript.creatureAnimator = poe.enemyPrefab.transform.Find("PoeAnimationContainer").GetComponent<Animator>();
             poeAIScript.enemyHP = 2;
@@ -42,8 +42,8 @@ namespace NightmareCritters
             poeEvents.scriptReference = poeAIScript;
 
             //Collision and transform
-            poe.enemyPrefab.transform.Find("PoeCollision").GetComponent<EnemyAICollisionDetect>().mainScript = poeAIScript;
             poeAIScript.animationContainer = poe.enemyPrefab.transform.Find("PoeAnimationContainer").transform;
+            poeAIScript.animationContainer.Find("PoeCollision").GetComponent<EnemyAICollisionDetect>().mainScript = poeAIScript;
             poeAIScript.headBone = FindDeepChild(poe.enemyPrefab.transform, "Bone.008");
 
             poeAIScript.flapSounds = new AudioClip[4];

@@ -74,7 +74,7 @@ namespace NightmareCritters.Flyable
             //Determine grid dimensions
             int gridSizeX = Mathf.CeilToInt((maxX - minX) / cubeSize) + 1;
             int gridSizeZ = Mathf.CeilToInt((maxZ - minZ) / cubeSize) + 1;
-            int gridLayersY = 8;
+            int gridLayersY = 6;
 
             // Initialize a 1D list to store nodes
             List<GameObject> allFlyNodes = new List<GameObject>();
