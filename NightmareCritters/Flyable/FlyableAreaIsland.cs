@@ -10,6 +10,7 @@ namespace NightmareCritters.Flyable
     {
         public List<GameObject> flyNodes;
         public GameObject[][][] sortedFlyNodes; //Holds each node with lowest x, y, and z being 0, 0, 0
+        private static readonly System.Random rng = new System.Random();
         public int xSize;
         public int ySize;
         public int zSize;
@@ -116,7 +117,7 @@ namespace NightmareCritters.Flyable
                     }
                 }
             }
-            Debug.Log($"Neighbors of {closestNode.name} found: {neighbors.Count}");
+/*            Debug.Log($"Neighbors of {closestNode.name} found: {neighbors.Count}");*/
             return neighbors.ToArray();
         }
 
@@ -193,11 +194,25 @@ namespace NightmareCritters.Flyable
             return closestNode;
         }
 
-        public List<GameObject> FindShortestNodeChain(Transform startTransform, Transform endTransform)
+        public List<GameObject> GetRandomPath(Transform startTransform, FlyableAreaIsland assignedIsland)
+        {
+            return FindShortestNodeChainDFS(startTransform, GetRandomIslandNode(assignedIsland).transform);
+        }
+
+        public GameObject GetRandomIslandNode(FlyableAreaIsland assignedIsland) 
+        {
+            if (assignedIsland == null || assignedIsland.flyNodes.Count == 0)
+            {
+                return null;
+            }
+            return assignedIsland.flyNodes[rng.Next(assignedIsland.flyNodes.Count)];
+        }
+
+        public List<GameObject> FindShortestNodeChainBFS(Transform startTransform, Transform endTransform)
         {
             GameObject startNode = startTransform.gameObject;
             GameObject endNode = endTransform.gameObject;
-            Debug.Log($"Start Node: {startNode.name}, End Node: {endNode.name}");
+            /*Debug.Log($"Start Node: {startNode.name}, End Node: {endNode.name}");*/
 
             if (startNode == null || endNode == null)
             {
@@ -217,7 +232,7 @@ namespace NightmareCritters.Flyable
             while (queue.Count > 0)
             {
                 var currentNode = queue.Dequeue();
-                Debug.Log($"Processing node: {currentNode.name}"); // Log current processing node
+                /*Debug.Log($"Processing node: {currentNode.name}");*/
 
                 foreach (var neighbor in GetNodeNeighbors(currentNode))
                 {
@@ -225,17 +240,70 @@ namespace NightmareCritters.Flyable
                         continue;
 
                     visited.Add(neighbor);
-                    parents[neighbor] = currentNode; // Set parent for path reconstruction
+                    parents[neighbor] = currentNode;
                     queue.Enqueue(neighbor);
 
                     if (neighbor == endNode)
                     {
-                        // Construct path from start to end node
+                        //path from start to end node, create reverse order List from finish to start, flip and return
                         var path = new List<GameObject>();
                         for (var node = endNode; node != null; node = parents.GetValueOrDefault(node))
                         {
                             path.Add(node);
-                            Debug.Log($"Path node: {node.name}"); // Log each path node
+                            /*Debug.Log($"Path node: {node.name}");*/
+                        }
+                        path.Reverse();
+                        return path;
+                    }
+                }
+            }
+            Debug.Log("No path found from start to end node.");
+            return null;
+        }
+
+        public List<GameObject> FindShortestNodeChainDFS(Transform startTransform, Transform endTransform)
+        {
+            GameObject startNode = startTransform.gameObject;
+            GameObject endNode = endTransform.gameObject;
+            /*Debug.Log($"Start Node: {startNode.name}, End Node: {endNode.name}");*/
+
+            if (startNode == null || endNode == null)
+            {
+                Debug.Log("FindPathUsingDFS: Early return start or end is null.");
+                return null;
+            }
+
+            if (startNode == endNode)
+                return new List<GameObject> { startNode };
+
+            var parents = new Dictionary<GameObject, GameObject>();
+            var stack = new Stack<GameObject>();
+            var visited = new HashSet<GameObject> { startNode };
+
+            stack.Push(startNode);
+
+            while (stack.Count > 0)
+            {
+                var currentNode = stack.Pop();
+                /*Debug.Log($"Processing node: {currentNode.name}");*/
+
+                foreach (var neighbor in GetNodeNeighbors(currentNode))
+                {
+                    if (visited.Contains(neighbor))
+                        continue;
+
+                    visited.Add(neighbor);
+                    parents[neighbor] = currentNode;
+                    stack.Push(neighbor);
+
+                    if (neighbor == endNode)
+                    {
+                        // Path from start to end node, create reverse order List from finish to start, flip and return
+                        var path = new List<GameObject>();
+                        for (var node = endNode; node != null; node = parents.GetValueOrDefault(node))
+                        {
+                            path.Add(node);
+                            /*Debug.Log($"Path node: {node.name}");*/
                         }
                         path.Reverse();
                         return path;
@@ -243,12 +311,31 @@ namespace NightmareCritters.Flyable
                 }
             }
 
-            // If no path is found
             Debug.Log("No path found from start to end node.");
             return null;
         }
 
+        public GameObject GetLowestNode(Transform toThisPoint)
+        {
+            // Convert the target position to indices within sortedFlyNodes
+            int xIndex = Mathf.Clamp(Mathf.FloorToInt((toThisPoint.position.x - minX) / cubeSize), 0, xSize - 1);
+            int yIndex = Mathf.Clamp(Mathf.FloorToInt((toThisPoint.position.y - minY) / cubeSize), 0, ySize - 1);
+            int zIndex = Mathf.Clamp(Mathf.FloorToInt((toThisPoint.position.z - minZ) / cubeSize), 0, zSize - 1);
 
+            GameObject lowestNode = sortedFlyNodes[xIndex][yIndex][zIndex] ?? GetClosestNode(toThisPoint);
+            if (lowestNode == null)
+            {
+                return null; // No valid nodes found.
+            }
 
+            int yOffset = 1;
+            // Traverse downward along Y-axis until the lowest available node is found
+            while (yIndex - yOffset >= 0 && sortedFlyNodes[xIndex][yIndex - yOffset][zIndex] != null)
+            {
+                lowestNode = sortedFlyNodes[xIndex][yIndex - yOffset][zIndex];
+                yOffset++;
+            }
+            return lowestNode;
+        }
     }
 }

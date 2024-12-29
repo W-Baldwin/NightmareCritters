@@ -112,9 +112,6 @@ namespace NightmareCritters.Flyable
                             GameObject AInode = new GameObject($"FlyGridNode{xIndex},{yLayer},{zIndex}");
                             AInode.transform.position = position;
                             AInode.transform.parent = flyableGridContainer.transform;
-                            BoxCollider collider = AInode.AddComponent<BoxCollider>();
-                            collider.size = Vector3.one * cubeSize;
-                            collider.isTrigger = true;
 
                             // Add node to the list
                             allFlyNodes.Add(AInode);
@@ -139,17 +136,7 @@ namespace NightmareCritters.Flyable
                         Destroy(child.gameObject);
                     }
                 }
-
-                foreach (Transform child in parentObject.transform)
-                {
-                    if (child.childCount < 100)
-                    {
-                        Destroy(child.gameObject);
-                    }
-                }
-
             }
-
             created = true;
         }
 

@@ -52,6 +52,41 @@ namespace NightmareCritters
             poeAIScript.flapSounds[2] = assetBundle.LoadAsset<AudioClip>("PoeFlap3");
             poeAIScript.flapSounds[3] = assetBundle.LoadAsset<AudioClip>("PoeFlap4");
 
+            //Death
+            poeAIScript.deathSounds = new AudioClip[1];
+            poeAIScript.deathSounds[0] = assetBundle.LoadAsset<AudioClip>("PoeDeath");
+
+            //Regular Loud Squawks
+            poeAIScript.squawkSounds = new AudioClip[2];
+            poeAIScript.squawkSounds[0] = assetBundle.LoadAsset<AudioClip>("PoeSquawk1");
+            poeAIScript.squawkSounds[1] = assetBundle.LoadAsset<AudioClip>("PoeSquawk2");
+
+            //Impact Sounds
+            poeAIScript.impactSounds = new AudioClip[3];
+            poeAIScript.impactSounds[0] = assetBundle.LoadAsset<AudioClip>("PoeImpact1");
+            poeAIScript.impactSounds[1] = assetBundle.LoadAsset<AudioClip>("PoeImpact2");
+            poeAIScript.impactSounds[2] = assetBundle.LoadAsset<AudioClip>("PoeImpact3");
+
+            //Patrol Warning Sounds
+            poeAIScript.patrolWarningSounds = new AudioClip[2];
+            poeAIScript.patrolWarningSounds[0] = assetBundle.LoadAsset<AudioClip>("PoePatrolWarning1");
+            poeAIScript.patrolWarningSounds[1] = assetBundle.LoadAsset<AudioClip>("PoePatrolWarning2");
+
+            //Attack Warning Sounds
+            poeAIScript.attackWarningSounds = new AudioClip[1];
+            poeAIScript.attackWarningSounds[0] = assetBundle.LoadAsset<AudioClip>("PoeAttackWarning1");
+
+            //Squawk fly sounds
+            poeAIScript.squawkFlySounds = new AudioClip[2];
+            poeAIScript.squawkFlySounds[0] = assetBundle.LoadAsset<AudioClip>("PoeSquawkFly1");
+            poeAIScript.squawkFlySounds[1] = assetBundle.LoadAsset<AudioClip>("PoeSquawkFly2");
+
+            //Squawk Ground Far Sounds
+            poeAIScript.squawkGroundFarSounds = new AudioClip[3];
+            poeAIScript.squawkGroundFarSounds[0] = assetBundle.LoadAsset<AudioClip>("PoeSquawkGoundFar1");
+            poeAIScript.squawkGroundFarSounds[1] = assetBundle.LoadAsset<AudioClip>("PoeSquawkGoundFar2");
+            poeAIScript.squawkGroundFarSounds[2] = assetBundle.LoadAsset<AudioClip>("PoeSquawkGoundFar3");
+
             TerminalNode poeTerminalNode = assetBundle.LoadAsset<TerminalNode>("Nightmare Poe Terminal Node");
             TerminalKeyword poeTerminalKeyword = assetBundle.LoadAsset<TerminalKeyword>("Nightmare Poe Terminal Keyword");
             LethalLib.Modules.Utilities.FixMixerGroups(poe.enemyPrefab);
